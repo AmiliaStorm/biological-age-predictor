@@ -1,12 +1,12 @@
 # Biological Age Prediction: SQL, Phenotypic Age & Machine Learning on NHANES
 
-A portfolio project benchmarking a published biological aging clock (Levine et al. 2018 Phenotypic Age) against a self-built machine learning model, using real-world US population health data and actual mortality outcomes.
+A project on benchmarking a published biological aging clock (Levine et al. 2018 Phenotypic Age) against a self-built machine learning model, using real-world US population health data and actual mortality outcomes.
 
 ## Overview
 
 This project asks: **can a machine learning model, trained only on raw blood biomarkers, match a peer-reviewed clinical aging formula at predicting mortality risk?**
 
-Rather than benchmarking against a proxy (like chronological age), the model is evaluated on what actually matters: real 3-4 year mortality outcomes from the NHANES Linked Mortality File. This is closer to how aging biomarkers are validated in the research literature.
+Rather than benchmarking against a proxy (like chronological age), the model is evaluated on what actually matters. Real 3-4 year mortality outcomes from the NHANES Linked Mortality File. This is closer to how aging biomarkers are validated in the research literature.
 
 ## Data Source
 
@@ -64,3 +64,6 @@ Both ML models substantially outperform chance (AUC 0.5) and fall in a range con
 - Extend to the 2017-March 2020 cycle once mortality linkage data becomes available
 - Try XGBoost with regularization tuning to see if it can overcome the overfitting seen with scikit-learn's Gradient Boosting on this small, imbalanced sample
 - Explore a multi-omics approach incorporating epigenetic clock data, following Moqri et al. (2026)
+
+  ## Sources and data collection:
+- https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component=Laboratory&CycleBeginYear=2015 
