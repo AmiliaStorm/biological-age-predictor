@@ -1,0 +1,21 @@
+# Databaser - dette er data, ikke kode, og bor genereres pa nytt via skriptene
+*.db
+*.sqlite
+*.sqlite3
+
+# Ravdata lastet ned fra CDC (store, offentlig tilgjengelige - ingen grunn til a committe dem)
+*.xpt
+*.dat
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# DB Browser for SQLite prosjektfiler
+*.sqbpro
+
+# OS-spesifikke filer
+.DS_Store
+Thumbs.db
