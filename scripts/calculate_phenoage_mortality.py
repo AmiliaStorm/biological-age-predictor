@@ -1,9 +1,9 @@
 """
-Beregner Levine Phenotypic Age for NHANES 2015-2016-syklusen
-(samme validerte formel som tidligere, na pa mortalitets-koblet data).
+Calculates Levine Phenotypic Age for the NHANES 2015-2016 cycle
+(same validated formula as before, now on mortality-linked data).
 
-Kjor: python calculate_phenoage_mortality.py
-(legg filen i samme mappe som nhanes_mortality.db)
+Run: python calculate_phenoage_mortality.py
+(place this file in the same folder as nhanes_mortality.db)
 """
 
 import sqlite3
@@ -60,7 +60,7 @@ def main():
           AND rdw IS NOT NULL AND wbc IS NOT NULL
     """).fetchall()
 
-    print(f"Beregner Phenotypic Age for {len(rows)} deltakere...")
+    print(f"Calculating Phenotypic Age for {len(rows)} participants...")
 
     results = []
     errors = 0
@@ -68,7 +68,7 @@ def main():
         (seqn, age, gender, albumin, creatinine, alk_phos, glucose, crp,
          lymph, mcv, rdw, wbc, mortstat_raw, permth_exm) = row
 
-        # mortstat kan komme som tekst (f.eks. "1" med mellomrom) fra mortalitetsfilen
+        # mortstat may come as text (e.g. "1" with whitespace) from the mortality file
         try:
             mortstat = int(str(mortstat_raw).strip())
         except (ValueError, TypeError):
@@ -84,7 +84,7 @@ def main():
             errors += 1
             continue
 
-    print(f"  Ferdig: {len(results)} beregnet, {errors} feilet")
+    print(f"  Done: {len(results)} calculated, {errors} failed")
 
     cur.execute("DROP TABLE IF EXISTS phenoage_mortality_results")
     cur.execute("""
@@ -109,10 +109,10 @@ def main():
     avg_gap_dead = sum(r[4] for r in results if r[5] == 1) / max(deaths, 1)
     avg_gap_alive = sum(r[4] for r in results if r[5] == 0) / max(len(results) - deaths, 1)
 
-    print(f"\nGjennomsnittlig age_gap (alle): {avg_gap:.2f} ar")
-    print(f"Gjennomsnittlig age_gap (dode, n={deaths}): {avg_gap_dead:.2f} ar")
-    print(f"Gjennomsnittlig age_gap (levende, n={len(results)-deaths}): {avg_gap_alive:.2f} ar")
-    print(f"\nTabell 'phenoage_mortality_results' lagret i {DB_PATH}")
+    print(f"\nAverage age_gap (all): {avg_gap:.2f} years")
+    print(f"Average age_gap (deceased, n={deaths}): {avg_gap_dead:.2f} years")
+    print(f"Average age_gap (alive, n={len(results)-deaths}): {avg_gap_alive:.2f} years")
+    print(f"\nTable 'phenoage_mortality_results' saved in {DB_PATH}")
 
     conn.close()
 

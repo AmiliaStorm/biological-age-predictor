@@ -1,9 +1,9 @@
 """
-Beregner Levine Phenotypic Age fra NHANES-data i nhanes.db,
-og skriver resultatet (inkl. age_gap) tilbake som en ny tabell.
+Calculates Levine Phenotypic Age from NHANES data in nhanes.db,
+and writes the result (including age_gap) back as a new table.
 
-Kjør: python calculate_phenoage.py
-(legg filen i samme mappe som nhanes.db, f.eks. Downloads)
+Run: python calculate_phenoage.py
+(place this file in the same folder as nhanes.db, e.g. Downloads)
 """
 
 import sqlite3
@@ -16,7 +16,7 @@ def phenotypic_age(age, albumin_gdl, creatinine_mgdl, glucose, crp_mgl,
                     lymphocyte_pct, mcv, rdw, alk_phosphatase, wbc):
     """
     Levine et al. 2018 Phenotypic Age.
-    Input-enheter (rått fra NHANES):
+    Input units (raw from NHANES):
       albumin_gdl: g/dL
       creatinine_mgdl: mg/dL
       glucose: mg/dL
@@ -25,15 +25,15 @@ def phenotypic_age(age, albumin_gdl, creatinine_mgdl, glucose, crp_mgl,
       mcv: fL
       rdw: %
       alk_phosphatase: U/L
-      wbc: 1000 celler/uL
+      wbc: 1000 cells/uL
     """
     albumin_gL = albumin_gdl * 10.0
     creatinine_umolL = creatinine_mgdl * 88.4
-    glucose_mmolL = glucose / 18.0  # NHANES gir glukose i mg/dL, formelen vil ha mmol/L
+    glucose_mmolL = glucose / 18.0  # NHANES provides glucose in mg/dL, formula needs mmol/L
     crp_mgdL = crp_mgl / 10.0
 
     if crp_mgdL <= 0:
-        crp_mgdL = 0.01  # unngå ln(0)
+        crp_mgdL = 0.01  # avoid ln(0)
 
     xb = (
         -19.9067
@@ -72,7 +72,7 @@ def main():
           AND rdw IS NOT NULL AND wbc IS NOT NULL
     """).fetchall()
 
-    print(f"Beregner Phenotypic Age for {len(rows)} deltakere...")
+    print(f"Calculating Phenotypic Age for {len(rows)} participants...")
 
     results = []
     errors = 0
@@ -87,7 +87,7 @@ def main():
             errors += 1
             continue
 
-    print(f"  Ferdig: {len(results)} beregnet, {errors} feilet (matematisk udefinert)")
+    print(f"  Done: {len(results)} calculated, {errors} failed (mathematically undefined)")
 
     cur.execute("DROP TABLE IF EXISTS phenoage_results")
     cur.execute("""
@@ -106,8 +106,8 @@ def main():
     conn.commit()
 
     avg_gap = sum(r[4] for r in results) / len(results)
-    print(f"\nGjennomsnittlig age_gap: {avg_gap:.2f} år")
-    print(f"Tabell 'phenoage_results' lagret i {DB_PATH}")
+    print(f"\nAverage age_gap: {avg_gap:.2f} years")
+    print(f"Table 'phenoage_results' saved in {DB_PATH}")
 
     conn.close()
 

@@ -1,14 +1,14 @@
 """
-NHANES 2015-2016 Downloader + Mortalitetskobling
-For: Biological Age Predictor - ML vs. Levine PhenoAge pa faktisk dodelighet
+NHANES 2015-2016 Downloader + Mortality Linkage
+For: Biological Age Predictor - ML vs. Levine PhenoAge on actual mortality
 
-Dette skriptet:
-1. Laster ned biomarkor-filene for 2015-2016-syklusen (samme som for, men "_I"-suffiks)
-2. Laster ned den offentlige mortalitets-koblingsfilen fra NCHS (fixed-width .dat)
-3. Kobler dem sammen pa SEQN og lagrer alt i en ny SQLite-database (nhanes_mortality.db)
+This script:
+1. Downloads the biomarker files for the 2015-2016 cycle (same as before, but "_I" suffix)
+2. Downloads the public-use mortality linkage file from NCHS (fixed-width .dat)
+3. Links them together on SEQN and saves everything in a new SQLite database (nhanes_mortality.db)
 
-Kjor: python nhanes_mortality_setup.py
-Krever: pip install pandas requests pyreadstat
+Run: python nhanes_mortality_setup.py
+Requires: pip install pandas requests pyreadstat
 """
 
 import pandas as pd
@@ -23,7 +23,7 @@ MORT_URL = "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/datalinkage/linked_mo
 FILES = {
     "DEMO": ("DEMO_I.xpt", "Demographics"),
     "BIOPRO": ("BIOPRO_I.xpt", "Standard Biochemistry Profile"),
-    "GLU": ("GLU_I.xpt", "Fastende glukose"),
+    "GLU": ("GLU_I.xpt", "Fasting glucose"),
     "HSCRP": ("HSCRP_I.xpt", "High-sensitivity CRP"),
     "CBC": ("CBC_I.xpt", "Complete Blood Count"),
 }
@@ -36,8 +36,8 @@ KEY_VARS = {
     "CBC": ["SEQN", "LBXLYPCT", "LBXMCVSI", "LBXRDW", "LBXWBCSI"],
 }
 
-# Fast-bredde kolonnedefinisjon for NCHS mortalitetsfil (standard for alle sykluser)
-# (start, slutt) er 1-indeksert og inklusiv, slik NCHS dokumenterer det
+# Fixed-width column spec for the NCHS mortality file (standard across all cycles)
+# (start, end) are 1-indexed and inclusive, as documented by NCHS
 MORT_COLSPECS = [
     (0, 6),    # SEQN
     (14, 15),  # eligstat
@@ -56,40 +56,40 @@ def download_biomarkers(conn):
     for table_name, (filename, description) in FILES.items():
         url = BASE_URL + filename
         print(f"\n--- {table_name}: {description} ---")
-        print(f"Laster ned fra: {url}")
+        print(f"Downloading from: {url}")
         try:
             df = pd.read_sas(url, format="xport")
         except Exception as e:
-            print(f"  FEIL: {e}")
+            print(f"  ERROR: {e}")
             continue
 
-        print(f"  Hentet {len(df)} rader")
+        print(f"  Retrieved {len(df)} rows")
         if table_name in KEY_VARS:
             available = [c for c in KEY_VARS[table_name] if c in df.columns]
             df = df[available]
 
         df.to_sql(table_name, conn, if_exists="replace", index=False)
-        print(f"  Lastet inn i SQLite-tabell '{table_name}'")
+        print(f"  Loaded into SQLite table '{table_name}'")
 
 
 def download_mortality(conn):
-    print(f"\n--- MORTALITET ---")
-    print(f"Laster ned fra: {MORT_URL}")
+    print(f"\n--- MORTALITY ---")
+    print(f"Downloading from: {MORT_URL}")
 
     local_path = "mortality_raw.dat"
     response = requests.get(MORT_URL, timeout=60)
     response.raise_for_status()
     with open(local_path, "wb") as f:
         f.write(response.content)
-    print(f"  Lastet ned til {local_path}")
+    print(f"  Downloaded to {local_path}")
 
     df = pd.read_fwf(local_path, colspecs=MORT_COLSPECS, names=MORT_NAMES)
 
-    # eligstat==1 betyr kvalifisert for mortalitetskobling (voksne som faktisk kan spores)
+    # eligstat==1 means eligible for mortality linkage (adults who can actually be traced)
     df = df[df["eligstat"] == 1]
 
     df.to_sql("MORTALITY", conn, if_exists="replace", index=False)
-    print(f"  {len(df)} deltakere kvalifisert for mortalitetsoppfolging, lastet inn i 'MORTALITY'")
+    print(f"  {len(df)} participants eligible for mortality follow-up, loaded into 'MORTALITY'")
 
     os.remove(local_path)
 
@@ -121,7 +121,7 @@ def build_merged_view(conn):
     """
     conn.execute(query)
     conn.commit()
-    print("\nView 'phenoage_mortality_input' opprettet - biomarkorer + mortalitetsutfall koblet pa SEQN.")
+    print("\nView 'phenoage_mortality_input' created — biomarkers + mortality outcome linked on SEQN.")
 
 
 def main():
@@ -137,8 +137,8 @@ def main():
         WHERE age >= 18 AND albumin IS NOT NULL
     """)
     n, deaths = cur.fetchone()
-    print(f"\nFerdig! {n} voksne med biomarkordata, {int(deaths or 0)} registrerte dodsfall i oppfolgingsperioden.")
-    print(f"Database lagret som: {os.path.abspath(DB_PATH)}")
+    print(f"\nDone! {n} adults with biomarker data, {int(deaths or 0)} recorded deaths during follow-up.")
+    print(f"Database saved as: {os.path.abspath(DB_PATH)}")
 
     conn.close()
 
